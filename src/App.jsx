@@ -35,13 +35,18 @@ export default function App() {
     if (!start || !end) return
     setLoading(true); setError(null)
     try {
-      // Fetch route and cycling infra in parallel; infra needed for segment coloring
-      const [result] = await Promise.all([
+      // Run both in parallel, collect results, then update state together
+      // (ensures React batches both updates → classification runs immediately)
+      const [result, freshInfra] = await Promise.all([
         getBikeRoute(start, end),
         cyclingInfra
-          ? Promise.resolve()
-          : fetchCyclingInfrastructure().then(setCyclingInfra).catch(() => {}),
+          ? Promise.resolve(cyclingInfra)
+          : fetchCyclingInfrastructure().catch(err => {
+              console.error('Overpass non raggiungibile:', err)
+              return null
+            }),
       ])
+      if (freshInfra && freshInfra !== cyclingInfra) setCyclingInfra(freshInfra)
       setRoute(result)
     }
     catch (e) { setError(e.message || 'Errore nel calcolo del percorso') }
@@ -106,6 +111,11 @@ export default function App() {
           <div className="route-legend">
             <span className="legend-item"><span className="legend-line green" />Pista ciclabile</span>
             <span className="legend-item"><span className="legend-line yellow dashed" />Collegamento su strada</span>
+          </div>
+        )}
+        {route && !cyclingInfra && (
+          <div className="route-legend route-legend-warn">
+            Dati piste non disponibili — percorso in blu
           </div>
         )}
         <div className="click-hint">

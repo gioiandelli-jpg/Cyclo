@@ -1,5 +1,11 @@
 const BBOX = '43.83,11.03,43.94,11.20'
-const API = 'https://overpass-api.de/api/interpreter'
+
+// Multiple mirrors — tries each in order until one works
+const MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.osm.ch/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
 
 function buildNodeMap(elements) {
   const map = {}
@@ -24,14 +30,26 @@ function waysToGeoJSON(elements) {
   return { type: 'FeatureCollection', features }
 }
 
-async function query(ql) {
-  const res = await fetch(API, {
+async function queryMirror(url, ql) {
+  const res = await fetch(url, {
     method: 'POST',
-    body: `[out:json][timeout:30];${ql}`,
-    headers: { 'Content-Type': 'text/plain' },
+    // Standard Overpass form-encoded format, compatible with all mirrors
+    body: new URLSearchParams({ data: `[out:json][timeout:30];${ql}` }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   })
-  if (!res.ok) throw new Error(`Overpass error ${res.status}`)
-  return res.json()
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const json = await res.json()
+  if (!json.elements) throw new Error('Risposta non valida')
+  return json
+}
+
+async function query(ql) {
+  let lastErr
+  for (const mirror of MIRRORS) {
+    try { return await queryMirror(mirror, ql) }
+    catch (e) { lastErr = e; console.warn(`Overpass mirror ${mirror} fallita:`, e.message) }
+  }
+  throw new Error(`Tutti i server Overpass non raggiungibili: ${lastErr?.message}`)
 }
 
 export async function fetchCyclingInfrastructure() {

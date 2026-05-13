@@ -280,6 +280,15 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
 }
 
 /* Route legend */
+.route-legend-warn {
+  position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+  background: rgba(120, 53, 15, 0.88) !important;
+  color: #fcd34d !important; font-size: 12px;
+  padding: 7px 14px; border-radius: 20px;
+  border: 1px solid rgba(252,211,77,0.3) !important;
+  pointer-events: none; z-index: 400; backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
 .route-legend {
   position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 16px; align-items: center;
