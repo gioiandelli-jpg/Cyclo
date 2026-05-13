@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Map from './components/Map'
 import SearchPanel from './components/SearchPanel'
-import RouteInfo from './components/RouteInfo'
 import { getBikeRoute } from './services/routing'
 import { fetchCyclingInfrastructure, fetchNamedRoutes } from './services/overpass'
 
@@ -98,7 +97,6 @@ export default function App() {
           onToggleRoute={handleToggleRoute} routesLoading={routesLoading}
           onLoadRoutes={handleLoadRoutes}
         />
-        <RouteInfo route={route} />
       </aside>
       <main className="map-area">
         <Map

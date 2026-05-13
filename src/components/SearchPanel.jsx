@@ -196,7 +196,7 @@ export default function SearchPanel({
           <input type="checkbox" checked={showCyclingInfra} onChange={onToggleCyclingInfra} />
           <span className="toggle-switch" />
           <span className="toggle-text">
-            <span className="layer-dot" style={{ background: '#22c55e' }} />
+            <span className="layer-dot" style={{ background: '#38bdf8' }} />
             Piste ciclabili OSM
           </span>
           {infraLoading && <span className="layer-spinner" />}

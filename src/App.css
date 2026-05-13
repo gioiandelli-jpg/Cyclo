@@ -305,6 +305,7 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
   width: 24px; height: 4px; border-radius: 2px; flex-shrink: 0;
 }
 .legend-line.green { background: #22c55e; }
+.legend-line.cyan { background: #38bdf8; }
 .legend-line.yellow { background: #eab308; }
 .legend-line.dashed {
   background: none;

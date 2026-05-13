@@ -45,7 +45,7 @@ function InfraLayer({ data }) {
   const rev = useRef(0)
   useEffect(() => { rev.current++ }, [data])
   if (!data) return null
-  return <GeoJSON key={rev.current} data={data} style={{ color: '#22c55e', weight: 3, opacity: 0.85 }} />
+  return <GeoJSON key={rev.current} data={data} style={{ color: '#38bdf8', weight: 3, opacity: 0.85 }} />
 }
 
 function NamedRouteLayer({ route }) {
