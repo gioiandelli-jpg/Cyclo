@@ -5,16 +5,6 @@ export default function RouteInfo({ route }) {
   const timeMin = route.duration
     ? Math.round(route.duration / 60)
     : Math.round(route.distance / 1000 / 15 * 60)
-  const steps = route.legs?.[0]?.steps?.filter(s => s.name) || []
-
-  const maneuverIcon = (type) => {
-    const icons = {
-      'turn': '↪', 'new name': '→', 'depart': '🚲', 'arrive': '🏁',
-      'merge': '⤵', 'roundabout': '↻', 'rotary': '↻',
-      'fork': '⑂', 'end of road': '⤴',
-    }
-    return icons[type] || '→'
-  }
 
   return (
     <div className="route-info">
@@ -44,36 +34,6 @@ export default function RouteInfo({ route }) {
           <span className="stat-label">Preferenza percorso</span>
         </div>
       </div>
-
-      {steps.length > 0 && (
-        <div className="route-steps">
-          <h3 className="steps-title">Istruzioni</h3>
-          <ol className="steps-list">
-            {steps.slice(0, 8).map((step, i) => (
-              <li key={i} className="step-item">
-                <span className="step-icon">{maneuverIcon(step.maneuver?.type)}</span>
-                <span className="step-text">
-                  {step.maneuver?.modifier
-                    ? `Svolta ${step.maneuver.modifier === 'left' ? 'a sinistra' : step.maneuver.modifier === 'right' ? 'a destra' : step.maneuver.modifier}`
-                    : 'Continua'
-                  }
-                  {step.name && step.name !== '' ? ` su ${step.name}` : ''}
-                </span>
-                {step.distance > 0 && (
-                  <span className="step-dist">
-                    {step.distance >= 1000
-                      ? `${(step.distance / 1000).toFixed(1)} km`
-                      : `${Math.round(step.distance)} m`}
-                  </span>
-                )}
-              </li>
-            ))}
-            {steps.length > 8 && (
-              <li className="step-item step-more">…e altri {steps.length - 8} passaggi</li>
-            )}
-          </ol>
-        </div>
-      )}
     </div>
   )
 }
