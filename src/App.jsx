@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Map from './components/Map'
 import SearchPanel from './components/SearchPanel'
 import RouteAlternatives from './components/RouteAlternatives'
+import MobileSheet from './components/MobileSheet'
 import { getRouteAlternatives } from './services/routing'
 import { fetchCyclingInfrastructure, bboxFromRoute } from './services/overpass'
 
@@ -14,7 +15,6 @@ export default function App() {
   const [error, setError] = useState(null)
   const [clickMode, setClickMode] = useState('start')
   const [cyclingInfra, setCyclingInfra] = useState(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
 
   const route = routes[selectedRouteIdx] || null
 
@@ -22,15 +22,15 @@ export default function App() {
     const point = { lat: latlng.lat, lng: latlng.lng, display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` }
     if (clickMode === 'start') { setStart(point); setClickMode('end') }
     else { setEnd(point); setClickMode('start') }
-    setRoutes([]); setSheetOpen(false); setError(null)
+    setRoutes([]); setError(null)
   }
 
-  const handleStartSelect = (point) => { setStart(point); setRoutes([]); setSheetOpen(false); setError(null) }
-  const handleEndSelect = (point) => { setEnd(point); setRoutes([]); setSheetOpen(false); setError(null) }
+  const handleStartSelect = (point) => { setStart(point); setRoutes([]); setError(null) }
+  const handleEndSelect = (point) => { setEnd(point); setRoutes([]); setError(null) }
 
   const handleCalculate = async () => {
     if (!start || !end) return
-    setLoading(true); setError(null); setRoutes([]); setSheetOpen(false)
+    setLoading(true); setError(null); setRoutes([])
     try {
       const alternatives = await getRouteAlternatives(start, end)
       const allCoords = alternatives.flatMap(r => r.geometry.coordinates)
@@ -38,7 +38,6 @@ export default function App() {
       setCyclingInfra(freshInfra)
       setSelectedRouteIdx(0)
       setRoutes(alternatives)
-      setSheetOpen(true)
     } catch (e) {
       setError(e.message || 'Errore nel calcolo del percorso')
     } finally {
@@ -48,19 +47,19 @@ export default function App() {
 
   const handleClear = () => {
     setStart(null); setEnd(null); setRoutes([]); setSelectedRouteIdx(0)
-    setError(null); setClickMode('start'); setSheetOpen(false)
+    setError(null); setClickMode('start')
   }
 
   const hintText = !start
-    ? 'Tocca la mappa per impostare la partenza'
+    ? 'Clicca sulla mappa per impostare la partenza'
     : !end
-    ? 'Tocca la mappa per impostare la destinazione'
-    : routes.length
-    ? null
+    ? 'Clicca sulla mappa per impostare la destinazione'
+    : routes.length ? null
     : 'Punti impostati — calcola il percorso!'
 
   return (
     <div className="app-layout">
+      {/* ── Desktop sidebar ── */}
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-logo">🚲</span>
@@ -80,35 +79,9 @@ export default function App() {
         </div>
       </aside>
 
+      {/* ── Map ── */}
       <main className="map-area">
-        <Map
-          start={start} end={end} route={route}
-          cyclingInfra={cyclingInfra}
-          onMapClick={handleMapClick}
-        />
-
-        {/* Mobile bottom sheet */}
-        <div className={`mobile-sheet${sheetOpen ? ' visible' : ''}`}>
-          <div className="sheet-top">
-            <div className="sheet-handle" />
-            <button className="sheet-dismiss" onClick={() => setSheetOpen(false)} aria-label="Chiudi">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-          </div>
-          <RouteAlternatives routes={routes} selectedIdx={selectedRouteIdx} onSelect={setSelectedRouteIdx} />
-        </div>
-
-        {/* FAB to reopen sheet after dismiss */}
-        {routes.length > 0 && !sheetOpen && (
-          <button className="fab-routes" onClick={() => setSheetOpen(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M5 15l7-7 7 7"/>
-            </svg>
-            Percorsi
-          </button>
-        )}
+        <Map start={start} end={end} route={route} cyclingInfra={cyclingInfra} onMapClick={handleMapClick} />
 
         {route && cyclingInfra && (
           <div className="route-legend">
@@ -117,6 +90,15 @@ export default function App() {
           </div>
         )}
         {hintText && <div className="click-hint">{hintText}</div>}
+
+        {/* ── Mobile bottom sheet (Apple Maps-style) ── */}
+        <MobileSheet
+          start={start} end={end}
+          onStartSelect={handleStartSelect} onEndSelect={handleEndSelect}
+          onCalculate={handleCalculate} onClear={handleClear}
+          loading={loading} error={error}
+          routes={routes} selectedIdx={selectedRouteIdx} onRouteSelect={setSelectedRouteIdx}
+        />
       </main>
     </div>
   )

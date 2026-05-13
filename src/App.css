@@ -237,129 +237,208 @@ html, body, #root {
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
-/* ── Mobile sheet (hidden on desktop) ───────────────── */
-.mobile-sheet { display: none; }
-.fab-routes   { display: none; }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ══════════════════════════════════════════════════════
-   MOBILE  (≤ 768 px)
+   MOBILE  (≤ 768 px) — Apple Maps-style bottom sheet
 ══════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .app-layout {
-    display: block;
-    position: relative;
-    height: 100dvh;
+  .app-layout { display: block; position: relative; height: 100dvh; overflow: hidden; }
+  .map-area   { position: absolute; inset: 0; z-index: 1; }
+
+  /* Desktop sidebar hidden on mobile */
+  .sidebar { display: none !important; }
+
+  /* Desktop hints hidden on mobile (sheet handles UX) */
+  .click-hint, .route-legend { display: none; }
+
+  /* Map scrim when searching */
+  .map-scrim {
+    position: absolute; inset: 0; z-index: 390;
+    background: rgba(0,0,0,0.18);
+    backdrop-filter: blur(1px);
+    animation: fade-in 0.2s ease;
+  }
+  @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+  /* ── Mobile Sheet (ms-*) ────────────────────────── */
+  .ms {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    z-index: 400;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+    transition: height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
+  .ms-idle    { height: 86px; }
+  .ms-search  { height: 62dvh; overflow-y: auto; }
+  .ms-ready   { height: auto; }
+  .ms-results { height: auto; max-height: 58dvh; overflow-y: auto; }
 
-  .map-area {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-
-  /* Sidebar → floating top card */
-  .sidebar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    width: 100%;
-    z-index: 500;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    border-radius: 0 0 20px 20px;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    overflow: visible;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  }
-
-  .sidebar-routes { display: none; }
-
-  .brand { padding: 12px 16px 8px; border-bottom: none; }
-  .brand-name { font-size: 18px; }
-  .brand-logo { font-size: 22px; }
-
-  .search-panel { padding: 0 12px 12px; }
-  .inputs-card { margin-bottom: 8px; border-radius: 12px; }
-
-  .actions { gap: 8px; }
-  .btn-primary { padding: 13px 16px; font-size: 15px; border-radius: 12px; }
-  .btn-ghost { padding: 13px 14px; border-radius: 12px; }
-
-  /* Bottom sheet */
-  .mobile-sheet {
-    display: block;
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    z-index: 400;
-    background: rgba(255,255,255,0.98);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid var(--border);
-    padding: 0 16px env(safe-area-inset-bottom, 24px);
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
-    transform: translateY(100%);
-    transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .mobile-sheet.visible { transform: translateY(0); }
-
-  .sheet-top {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 0 4px;
-    position: relative;
-  }
-  .sheet-handle {
+  /* Drag handle */
+  .ms-handle {
     width: 36px; height: 4px;
-    background: rgba(0,0,0,0.12);
-    border-radius: 2px;
+    background: rgba(0,0,0,0.1); border-radius: 2px;
+    margin: 10px auto 0;
   }
-  .sheet-dismiss {
-    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-    background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: 50%; width: 28px; height: 28px;
+
+  /* ── IDLE: search pill ── */
+  .ms-pill {
+    display: flex; align-items: center; gap: 10px;
+    width: calc(100% - 32px); margin: 10px 16px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 13px 16px;
+    font-size: 15px; color: var(--text-muted);
+    cursor: pointer; text-align: left;
+  }
+  .ms-pill:active { background: #e5e7eb; }
+
+  /* ── SEARCH: fields + suggestions ── */
+  .ms-search-inner { padding: 0 16px 12px; }
+
+  .ms-back {
     display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted); cursor: pointer;
+    background: none; border: none; cursor: pointer;
+    color: var(--green); padding: 12px 16px 8px;
+    margin-bottom: 2px;
+  }
+  .ms-back-sm {
+    width: 30px; height: 30px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 50%; padding: 0; color: var(--text-muted);
   }
 
-  /* FAB to reopen sheet */
-  .fab-routes {
-    display: flex;
-    align-items: center; gap: 6px;
-    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-    z-index: 500;
-    background: var(--green); color: white;
-    border: none; border-radius: 24px;
-    padding: 10px 20px; font-size: 14px; font-weight: 600;
-    box-shadow: 0 4px 16px rgba(22,163,74,0.4);
-    cursor: pointer; white-space: nowrap;
+  .ms-fields {
+    margin: 0 16px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  }
+  .ms-field {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; cursor: text;
+    transition: background 0.1s;
+  }
+  .ms-field-active { background: #f8fffe; }
+
+  .ms-dot {
+    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+  }
+  .ms-dot-a { background: var(--green); }
+  .ms-dot-b { background: var(--red); }
+
+  .ms-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 15px; color: var(--text);
+  }
+  .ms-input::placeholder { color: #9ca3af; }
+
+  .ms-gps {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: none; cursor: pointer;
+    color: var(--green); font-size: 12px; font-weight: 600;
+    padding: 4px 6px; border-radius: 8px;
+    white-space: nowrap;
+  }
+  .ms-clear-field {
+    background: #e5e7eb; border: none; border-radius: 50%;
+    width: 20px; height: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #6b7280; flex-shrink: 0;
   }
 
-  /* Reposition Leaflet zoom controls — clear of top card and bottom sheet */
+  .ms-connector {
+    height: 1px; background: var(--border);
+    margin-left: 35px; /* align with text start */
+  }
+
+  /* Suggestions (inline list) */
+  .ms-fetching {
+    padding: 12px 16px; font-size: 13px; color: var(--text-muted);
+  }
+  .ms-suggestions {
+    list-style: none;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  .ms-suggestion {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .ms-suggestion:last-child { border-bottom: none; }
+  .ms-suggestion:active { background: var(--surface-2); }
+  .ms-sugg-icon { color: #9ca3af; flex-shrink: 0; margin-top: 1px; }
+  .ms-sugg-text { font-size: 14px; color: var(--text); line-height: 1.35; }
+
+  /* ── READY: compact route summary + calculate ── */
+  .ms-ready { padding: 4px 16px 24px; }
+
+  .ms-points-row {
+    display: flex; flex-direction: column; gap: 0;
+    width: 100%; text-align: left; background: var(--surface-2);
+    border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 12px; cursor: pointer;
+  }
+  .ms-points-row:active { background: #e5e7eb; }
+  .ms-point-line { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  .ms-point-label { font-size: 14px; color: var(--text); flex: 1; }
+  .ms-vline { width: 1px; height: 10px; background: var(--border); margin: 2px 0 2px 5px; }
+
+  .ms-error {
+    display: flex; align-items: center; gap: 8px;
+    background: #fef2f2; border: 1px solid #fecaca;
+    color: #b91c1c; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; margin-bottom: 10px;
+  }
+
+  .ms-ready-actions { display: flex; gap: 8px; }
+  .ms-btn-calc {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--green); color: #fff;
+    border: none; border-radius: 14px;
+    padding: 15px; font-size: 16px; font-weight: 600;
+    box-shadow: 0 2px 10px rgba(22,163,74,0.3);
+    cursor: pointer;
+  }
+  .ms-btn-calc:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ms-btn-calc:active:not(:disabled) { background: var(--green-dark); }
+  .ms-btn-clear {
+    background: var(--surface-2); border: 1.5px solid var(--border);
+    color: var(--text-muted); border-radius: 14px;
+    padding: 15px 18px; font-size: 15px; font-weight: 500; cursor: pointer;
+  }
+  .ms-spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    animation: spin 0.6s linear infinite;
+  }
+
+  /* ── RESULTS: route alternatives ── */
+  .ms-results { padding: 0 16px 32px; }
+  .ms-results-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0 8px;
+  }
+  .ms-results-title { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
+  .ms-results-sub {
+    display: none; /* hide on small screens to save space */
+  }
+
+  /* Route alt cards inside sheet */
+  .ms-results .route-alt-card { border-radius: 14px; padding: 13px; }
+
+  /* Leaflet controls repositioned */
   .leaflet-top.leaflet-left {
-    top: auto;
-    left: auto;
-    bottom: 230px;
-    right: 14px;
+    top: auto; left: auto;
+    bottom: 100px; right: 14px;
   }
-  .leaflet-bottom.leaflet-right {
-    bottom: env(safe-area-inset-bottom, 8px);
-    right: 8px;
-  }
-  /* Larger touch targets for zoom buttons */
   .leaflet-touch .leaflet-bar a {
     width: 40px; height: 40px; line-height: 40px; font-size: 20px;
   }
-
-  .click-hint {
-    bottom: 16px;
-    font-size: 12px;
-    padding: 7px 14px;
-  }
-  .route-legend { bottom: 16px; }
+  .leaflet-bottom.leaflet-right { bottom: env(safe-area-inset-bottom, 8px); }
 }
