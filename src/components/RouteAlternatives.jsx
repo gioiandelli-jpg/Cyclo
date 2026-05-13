@@ -1,5 +1,5 @@
-function fmt(distM) {
-  return distM >= 1000 ? `${(distM / 1000).toFixed(1)} km` : `${Math.round(distM)} m`
+function fmt(m) {
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`
 }
 function fmtTime(s) {
   const m = Math.round(s / 60)
