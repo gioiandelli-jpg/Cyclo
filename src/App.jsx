@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Map from './components/Map'
 import SearchPanel from './components/SearchPanel'
+import RecommendedRoutes from './components/RecommendedRoutes'
 import { getBikeRoute } from './services/routing'
 import { fetchCyclingInfrastructure, fetchNamedRoutes } from './services/overpass'
 
@@ -19,6 +20,7 @@ export default function App() {
   const [namedRoutes, setNamedRoutes] = useState([])
   const [activeRouteIds, setActiveRouteIds] = useState([])
   const [routesLoading, setRoutesLoading] = useState(false)
+  const [activeRecIds, setActiveRecIds] = useState([])
 
   const handleMapClick = (latlng) => {
     const point = { lat: latlng.lat, lng: latlng.lng, display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` }
@@ -97,12 +99,19 @@ export default function App() {
           onToggleRoute={handleToggleRoute} routesLoading={routesLoading}
           onLoadRoutes={handleLoadRoutes}
         />
+        <RecommendedRoutes
+          activeIds={activeRecIds}
+          onToggle={id => setActiveRecIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+          )}
+        />
       </aside>
       <main className="map-area">
         <Map
           start={start} end={end} route={route}
           cyclingInfra={cyclingInfra} showCyclingInfra={showCyclingInfra}
           namedRoutes={namedRoutes} activeRouteIds={activeRouteIds}
+          activeRecIds={activeRecIds}
           onMapClick={handleMapClick}
         />
         {route && cyclingInfra && (

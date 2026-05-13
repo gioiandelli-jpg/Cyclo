@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, GeoJSON, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { classifyRouteSegments } from '../utils/classifyRoute'
+import { RECOMMENDED_ROUTES } from '../data/recommendedRoutes'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -63,6 +64,7 @@ export default function Map({
   start, end, route,
   cyclingInfra, showCyclingInfra,
   namedRoutes, activeRouteIds,
+  activeRecIds,
   onMapClick,
 }) {
   // Classify route segments: green = cycling infra, dashed yellow = road connection
@@ -96,6 +98,14 @@ export default function Map({
         .filter(r => activeRouteIds.includes(r.id))
         .map(r => <NamedRouteLayer key={r.id} route={r} />)
       }
+
+      {RECOMMENDED_ROUTES.filter(r => activeRecIds.includes(r.id)).map(r => (
+        <Polyline
+          key={r.id}
+          positions={r.coords.map(([lon, lat]) => [lat, lon])}
+          pathOptions={{ color: r.color, weight: 4, opacity: 0.9 }}
+        />
+      ))}
 
       {start && <Marker position={start} icon={greenIcon} />}
       {end && <Marker position={end} icon={redIcon} />}

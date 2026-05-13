@@ -279,6 +279,12 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
   white-space: nowrap;
 }
 
+/* Recommended routes section */
+.rec-routes-section {
+  border-top: 1px solid var(--sidebar-border);
+  padding: 14px 16px 8px;
+}
+
 /* Route legend */
 .route-legend-warn {
   position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
