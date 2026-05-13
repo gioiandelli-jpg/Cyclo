@@ -34,7 +34,16 @@ export default function App() {
   const handleCalculate = async () => {
     if (!start || !end) return
     setLoading(true); setError(null)
-    try { setRoute(await getBikeRoute(start, end)) }
+    try {
+      // Fetch route and cycling infra in parallel; infra needed for segment coloring
+      const [result] = await Promise.all([
+        getBikeRoute(start, end),
+        cyclingInfra
+          ? Promise.resolve()
+          : fetchCyclingInfrastructure().then(setCyclingInfra).catch(() => {}),
+      ])
+      setRoute(result)
+    }
     catch (e) { setError(e.message || 'Errore nel calcolo del percorso') }
     finally { setLoading(false) }
   }
@@ -93,6 +102,12 @@ export default function App() {
           namedRoutes={namedRoutes} activeRouteIds={activeRouteIds}
           onMapClick={handleMapClick}
         />
+        {route && cyclingInfra && (
+          <div className="route-legend">
+            <span className="legend-item"><span className="legend-line green" />Pista ciclabile</span>
+            <span className="legend-item"><span className="legend-line yellow dashed" />Collegamento su strada</span>
+          </div>
+        )}
         <div className="click-hint">
           {!start ? 'Clicca sulla mappa per impostare la partenza (A)'
             : !end ? 'Clicca sulla mappa per impostare la destinazione (B)'

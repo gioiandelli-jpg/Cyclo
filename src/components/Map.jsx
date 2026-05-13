@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, GeoJSON, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { classifyRouteSegments } from '../utils/classifyRoute'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -40,18 +41,11 @@ function FitBounds({ route }) {
   return null
 }
 
-// Wraps GeoJSON so the layer re-mounts when data changes
 function InfraLayer({ data }) {
-  const key = useRef(0)
-  useEffect(() => { key.current++ }, [data])
+  const rev = useRef(0)
+  useEffect(() => { rev.current++ }, [data])
   if (!data) return null
-  return (
-    <GeoJSON
-      key={key.current}
-      data={data}
-      style={{ color: '#22c55e', weight: 3, opacity: 0.85 }}
-    />
-  )
+  return <GeoJSON key={rev.current} data={data} style={{ color: '#22c55e', weight: 3, opacity: 0.85 }} />
 }
 
 function NamedRouteLayer({ route }) {
@@ -60,9 +54,7 @@ function NamedRouteLayer({ route }) {
       key={route.id}
       data={route.geojson}
       style={{ color: route.color, weight: 4, opacity: 0.9 }}
-      onEachFeature={(feature, layer) => {
-        if (route.name) layer.bindTooltip(route.name, { sticky: true })
-      }}
+      onEachFeature={(_, layer) => route.name && layer.bindTooltip(route.name, { sticky: true })}
     />
   )
 }
@@ -73,16 +65,24 @@ export default function Map({
   namedRoutes, activeRouteIds,
   onMapClick,
 }) {
-  const routeCoords = route
-    ? route.geometry.coordinates.map(([lng, lat]) => [lat, lng])
-    : []
+  // Classify route segments: green = cycling infra, dashed yellow = road connection
+  const segments = useMemo(() => {
+    if (!route) return []
+    const coords = route.geometry.coordinates // [lon, lat]
+    const classified = classifyRouteSegments(coords, cyclingInfra)
+
+    if (!classified) {
+      // No infra data yet — render as plain blue
+      return [{ isCycling: null, coords: coords.map(([lon, lat]) => [lat, lon]) }]
+    }
+    return classified.map(s => ({
+      ...s,
+      coords: s.coords.map(([lon, lat]) => [lat, lon]), // convert to [lat, lon] for Leaflet
+    }))
+  }, [route, cyclingInfra])
 
   return (
-    <MapContainer
-      center={[43.8777, 11.1022]}
-      zoom={14}
-      style={{ height: '100%', width: '100%' }}
-    >
+    <MapContainer center={[43.8777, 11.1022]} zoom={14} style={{ height: '100%', width: '100%' }}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -99,9 +99,22 @@ export default function Map({
 
       {start && <Marker position={start} icon={greenIcon} />}
       {end && <Marker position={end} icon={redIcon} />}
-      {routeCoords.length > 0 && (
-        <Polyline positions={routeCoords} color="#3b82f6" weight={5} opacity={0.85} />
-      )}
+
+      {segments.map((seg, i) => {
+        if (seg.isCycling === null) {
+          return <Polyline key={i} positions={seg.coords} color="#3b82f6" weight={5} opacity={0.85} />
+        }
+        if (seg.isCycling) {
+          return <Polyline key={i} positions={seg.coords} color="#22c55e" weight={5} opacity={0.95} />
+        }
+        return (
+          <Polyline
+            key={i}
+            positions={seg.coords}
+            pathOptions={{ color: '#eab308', weight: 4, opacity: 0.9, dashArray: '10 7' }}
+          />
+        )
+      })}
     </MapContainer>
   )
 }

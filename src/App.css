@@ -279,6 +279,30 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
   white-space: nowrap;
 }
 
+/* Route legend */
+.route-legend {
+  position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 16px; align-items: center;
+  background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 7px 14px; border-radius: 20px;
+  pointer-events: none; z-index: 400;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: #e2e8f0;
+}
+.legend-line {
+  width: 24px; height: 4px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-line.green { background: #22c55e; }
+.legend-line.yellow { background: #eab308; }
+.legend-line.dashed {
+  background: none;
+  border-top: 4px dashed #eab308;
+  border-radius: 0;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes spin-center { 50% { transform: translateY(-50%) rotate(360deg); } }
 
