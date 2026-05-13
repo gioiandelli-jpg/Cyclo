@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polyline, AttributionControl, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { classifyRouteSegments } from '../utils/classifyRoute'
 
@@ -46,7 +46,8 @@ export default function Map({ start, end, route, cyclingInfra, onMapClick }) {
   }, [route, cyclingInfra])
 
   return (
-    <MapContainer center={[43.8777, 11.1022]} zoom={14} style={{ height: '100%', width: '100%' }}>
+    <MapContainer center={[43.8777, 11.1022]} zoom={14} style={{ height: '100%', width: '100%' }} attributionControl={false}>
+      <AttributionControl prefix={false} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
