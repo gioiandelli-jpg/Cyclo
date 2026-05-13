@@ -99,13 +99,15 @@ export default function Map({
         .map(r => <NamedRouteLayer key={r.id} route={r} />)
       }
 
-      {RECOMMENDED_ROUTES.filter(r => activeRecIds.includes(r.id)).map(r => (
-        <Polyline
-          key={r.id}
-          positions={r.coords.map(([lon, lat]) => [lat, lon])}
-          pathOptions={{ color: r.color, weight: 4, opacity: 0.9 }}
-        />
-      ))}
+      {RECOMMENDED_ROUTES.filter(r => activeRecIds.includes(r.id)).map(r =>
+        r.segments.map((seg, i) => (
+          <Polyline
+            key={`${r.id}-${i}`}
+            positions={seg.map(([lon, lat]) => [lat, lon])}
+            pathOptions={{ color: r.color, weight: 4, opacity: 0.9 }}
+          />
+        ))
+      )}
 
       {start && <Marker position={start} icon={greenIcon} />}
       {end && <Marker position={end} icon={redIcon} />}
