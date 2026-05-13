@@ -14,6 +14,7 @@ export default function App() {
   const [error, setError] = useState(null)
   const [clickMode, setClickMode] = useState('start')
   const [cyclingInfra, setCyclingInfra] = useState(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const route = routes[selectedRouteIdx] || null
 
@@ -21,15 +22,15 @@ export default function App() {
     const point = { lat: latlng.lat, lng: latlng.lng, display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` }
     if (clickMode === 'start') { setStart(point); setClickMode('end') }
     else { setEnd(point); setClickMode('start') }
-    setRoutes([]); setError(null)
+    setRoutes([]); setSheetOpen(false); setError(null)
   }
 
-  const handleStartSelect = (point) => { setStart(point); setRoutes([]); setError(null) }
-  const handleEndSelect = (point) => { setEnd(point); setRoutes([]); setError(null) }
+  const handleStartSelect = (point) => { setStart(point); setRoutes([]); setSheetOpen(false); setError(null) }
+  const handleEndSelect = (point) => { setEnd(point); setRoutes([]); setSheetOpen(false); setError(null) }
 
   const handleCalculate = async () => {
     if (!start || !end) return
-    setLoading(true); setError(null); setRoutes([])
+    setLoading(true); setError(null); setRoutes([]); setSheetOpen(false)
     try {
       const alternatives = await getRouteAlternatives(start, end)
       const allCoords = alternatives.flatMap(r => r.geometry.coordinates)
@@ -37,6 +38,7 @@ export default function App() {
       setCyclingInfra(freshInfra)
       setSelectedRouteIdx(0)
       setRoutes(alternatives)
+      setSheetOpen(true)
     } catch (e) {
       setError(e.message || 'Errore nel calcolo del percorso')
     } finally {
@@ -45,7 +47,8 @@ export default function App() {
   }
 
   const handleClear = () => {
-    setStart(null); setEnd(null); setRoutes([]); setSelectedRouteIdx(0); setError(null); setClickMode('start')
+    setStart(null); setEnd(null); setRoutes([]); setSelectedRouteIdx(0)
+    setError(null); setClickMode('start'); setSheetOpen(false)
   }
 
   const hintText = !start
@@ -84,10 +87,28 @@ export default function App() {
           onMapClick={handleMapClick}
         />
 
-        <div className={`mobile-sheet${routes.length ? ' visible' : ''}`}>
-          <div className="sheet-handle" />
+        {/* Mobile bottom sheet */}
+        <div className={`mobile-sheet${sheetOpen ? ' visible' : ''}`}>
+          <div className="sheet-top">
+            <div className="sheet-handle" />
+            <button className="sheet-dismiss" onClick={() => setSheetOpen(false)} aria-label="Chiudi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+          </div>
           <RouteAlternatives routes={routes} selectedIdx={selectedRouteIdx} onSelect={setSelectedRouteIdx} />
         </div>
+
+        {/* FAB to reopen sheet after dismiss */}
+        {routes.length > 0 && !sheetOpen && (
+          <button className="fab-routes" onClick={() => setSheetOpen(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M5 15l7-7 7 7"/>
+            </svg>
+            Percorsi
+          </button>
+        )}
 
         {route && cyclingInfra && (
           <div className="route-legend">
