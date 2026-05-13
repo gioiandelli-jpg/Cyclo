@@ -2,13 +2,15 @@ import { useState } from 'react'
 import Map from './components/Map'
 import SearchPanel from './components/SearchPanel'
 import RecommendedRoutes from './components/RecommendedRoutes'
-import { getBikeRoute } from './services/routing'
+import RouteAlternatives from './components/RouteAlternatives'
+import { getRouteAlternatives } from './services/routing'
 import { fetchCyclingInfrastructure, fetchNamedRoutes, bboxFromRoute } from './services/overpass'
 
 export default function App() {
   const [start, setStart] = useState(null)
   const [end, setEnd] = useState(null)
-  const [route, setRoute] = useState(null)
+  const [routes, setRoutes] = useState([])
+  const [selectedRouteIdx, setSelectedRouteIdx] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [clickMode, setClickMode] = useState('start')
@@ -22,37 +24,40 @@ export default function App() {
   const [routesLoading, setRoutesLoading] = useState(false)
   const [activeRecIds, setActiveRecIds] = useState([])
 
+  const route = routes[selectedRouteIdx] || null
+
   const handleMapClick = (latlng) => {
     const point = { lat: latlng.lat, lng: latlng.lng, display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` }
     if (clickMode === 'start') { setStart(point); setClickMode('end') }
     else { setEnd(point); setClickMode('start') }
-    setRoute(null); setError(null)
+    setRoutes([]); setError(null)
   }
 
-  const handleStartSelect = (point) => { setStart(point); setRoute(null); setError(null) }
-  const handleEndSelect = (point) => { setEnd(point); setRoute(null); setError(null) }
+  const handleStartSelect = (point) => { setStart(point); setRoutes([]); setError(null) }
+  const handleEndSelect = (point) => { setEnd(point); setRoutes([]); setError(null) }
 
   const handleCalculate = async () => {
     if (!start || !end) return
-    setLoading(true); setError(null)
+    setLoading(true); setError(null); setRoutes([])
     try {
-      const result = await getBikeRoute(start, end)
-      // Fetch infra for the route's actual bounding box so long routes
-      // (Prato→Pistoia, Prato→Firenze) get correct green/yellow classification
-      const routeBbox = bboxFromRoute(result.geometry.coordinates)
+      const alternatives = await getRouteAlternatives(start, end)
+      // Union bbox of all route coordinates for accurate infra classification
+      const allCoords = alternatives.flatMap(r => r.geometry.coordinates)
+      const routeBbox = bboxFromRoute(allCoords)
       const freshInfra = await fetchCyclingInfrastructure(routeBbox).catch(err => {
         console.error('Overpass non raggiungibile:', err)
         return null
       })
       setCyclingInfra(freshInfra)
-      setRoute(result)
+      setSelectedRouteIdx(0)
+      setRoutes(alternatives)
     }
     catch (e) { setError(e.message || 'Errore nel calcolo del percorso') }
     finally { setLoading(false) }
   }
 
   const handleClear = () => {
-    setStart(null); setEnd(null); setRoute(null); setError(null); setClickMode('start')
+    setStart(null); setEnd(null); setRoutes([]); setSelectedRouteIdx(0); setError(null); setClickMode('start')
   }
 
   const handleToggleCyclingInfra = async () => {
@@ -69,9 +74,9 @@ export default function App() {
   const handleLoadRoutes = async () => {
     setRoutesLoading(true)
     try {
-      const routes = await fetchNamedRoutes()
-      setNamedRoutes(routes)
-      setActiveRouteIds(routes.map(r => r.id))
+      const loaded = await fetchNamedRoutes()
+      setNamedRoutes(loaded)
+      setActiveRouteIds(loaded.map(r => r.id))
     }
     catch { setError('Errore nel caricamento dei percorsi') }
     finally { setRoutesLoading(false) }
@@ -95,6 +100,11 @@ export default function App() {
           namedRoutes={namedRoutes} activeRouteIds={activeRouteIds}
           onToggleRoute={handleToggleRoute} routesLoading={routesLoading}
           onLoadRoutes={handleLoadRoutes}
+        />
+        <RouteAlternatives
+          routes={routes}
+          selectedIdx={selectedRouteIdx}
+          onSelect={setSelectedRouteIdx}
         />
         <RecommendedRoutes
           activeIds={activeRecIds}

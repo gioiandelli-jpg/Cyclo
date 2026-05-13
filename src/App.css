@@ -322,6 +322,40 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes spin-center { 50% { transform: translateY(-50%) rotate(360deg); } }
 
+/* Route alternatives */
+.route-alternatives {
+  border-top: 1px solid var(--sidebar-border);
+  padding: 12px 16px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.route-alt-card {
+  width: 100%;
+  text-align: left;
+  background: var(--sidebar-surface);
+  border: 1.5px solid var(--sidebar-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text);
+}
+.route-alt-card:hover:not(.active) { background: #263349; border-color: #475569; }
+.route-alt-card.active { border-color: var(--green); background: #0a2218; }
+.route-alt-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.route-alt-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.route-alt-card.active .route-alt-label { color: var(--green); }
+.route-alt-dist { font-size: 13px; font-weight: 600; color: var(--text); }
+.route-alt-stats {
+  display: flex; gap: 10px;
+  font-size: 11px; color: var(--text-muted); margin-bottom: 3px;
+}
+.route-alt-desc { font-size: 10px; color: #475569; }
+
 /* Mobile */
 @media (max-width: 640px) {
   .app-layout { flex-direction: column; }

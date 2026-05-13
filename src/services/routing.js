@@ -1,11 +1,16 @@
 const BROUTER = 'https://brouter.de/brouter'
 
-export async function getBikeRoute(start, end) {
+const ROUTE_PROFILES = [
+  { id: 'fast',     profile: 'fastbike', label: 'Più veloce',      desc: 'Percorso rapido su strade' },
+  { id: 'balanced', profile: 'trekking', label: 'Consigliato',     desc: 'Preferisce le piste ciclabili' },
+  { id: 'scenic',   profile: 'safety',   label: 'Parchi e ombra',  desc: 'Massima preferenza ciclabili e zone verdi' },
+]
+
+async function fetchSingleRoute(start, end, profile) {
   const lonlats = `${start.lng},${start.lat}|${end.lng},${end.lat}`
-  const url = `${BROUTER}?lonlats=${lonlats}&profile=trekking&alternativeidx=0&format=geojson`
+  const url = `${BROUTER}?lonlats=${lonlats}&profile=${profile}&alternativeidx=0&format=geojson`
 
   const res = await fetch(url)
-
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     if (res.status === 500 || text.includes('no route'))
@@ -19,44 +24,37 @@ export async function getBikeRoute(start, end) {
   const feature = data.features[0]
   const props = feature.properties || {}
 
+  // Keep only [lon, lat] for Leaflet rendering
   const coordinates = (feature.geometry.coordinates || []).map(([lon, lat]) => [lon, lat])
   const distanceM = parseFloat(props['track-length']) || 0
-  // BRouter gives total-time in seconds; fallback to 15 km/h estimate
   const durationS = parseFloat(props['total-time']) || (distanceM / 1000 / 15 * 3600)
+  // BRouter reports filtered (smoothed) elevation change in metres
+  const ascent  = Math.round(parseFloat(props['filtered ascent'])  || 0)
+  const descent = Math.round(parseFloat(props['filtered descent']) || 0)
 
   return {
     geometry: { type: 'LineString', coordinates },
     distance: distanceM,
     duration: durationS,
-    legs: [{ steps: parseMessages(props.messages || []) }],
+    ascent,
+    descent,
   }
 }
 
-function parseMessages(messages) {
-  if (!Array.isArray(messages) || messages.length < 2) return []
+export async function getRouteAlternatives(start, end) {
+  const settled = await Promise.allSettled(
+    ROUTE_PROFILES.map(p => fetchSingleRoute(start, end, p.profile))
+  )
+  const results = ROUTE_PROFILES
+    .map((p, i) => {
+      if (settled[i].status === 'rejected') {
+        console.warn(`Profile ${p.profile} failed:`, settled[i].reason)
+        return null
+      }
+      return { ...p, ...settled[i].value }
+    })
+    .filter(Boolean)
 
-  // BRouter prepends a header row with column names when strings are present
-  const isHeader = isNaN(parseFloat(messages[0]?.[0]))
-  const rows = isHeader ? messages.slice(1) : messages
-
-  // rows: [lon, lat, ele, distFromPrev, turnAngle, hint]
-  // skip departure (index 0) and arrival (last)
-  return rows.slice(1, -1).map((row, i) => {
-    const angle = parseFloat(row[4]) || 0
-    const distToNext = parseFloat(rows[i + 2]?.[3]) || 0
-    const hint = (row[5] || '').replace(/^\w\|/, '').trim()
-
-    let modifier = 'straight'
-    if (Math.abs(angle) > 150)     modifier = 'u-turn'
-    else if (angle > 60)           modifier = 'right'
-    else if (angle > 20)           modifier = 'slight right'
-    else if (angle < -60)          modifier = 'left'
-    else if (angle < -20)          modifier = 'slight left'
-
-    return {
-      maneuver: { type: 'turn', modifier },
-      name: hint,
-      distance: distToNext,
-    }
-  })
+  if (!results.length) throw new Error('Percorso non trovato — prova punti più vicini a strade o piste ciclabili')
+  return results
 }
