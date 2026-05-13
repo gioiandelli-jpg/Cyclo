@@ -65,7 +65,6 @@ export default function Map({
   cyclingInfra, showCyclingInfra,
   namedRoutes, activeRouteIds,
   activeRecIds,
-  intercityRoutes, activeIntercityIds,
   onMapClick,
 }) {
   // Classify route segments: green = cycling infra, dashed yellow = road connection
@@ -109,18 +108,6 @@ export default function Map({
           />
         ))
       )}
-
-      {intercityRoutes
-        .filter(r => activeIntercityIds.includes(r.id))
-        .map(r => (
-          <GeoJSON
-            key={r.id}
-            data={r.geojson}
-            style={{ color: r.color, weight: 4, opacity: 0.85 }}
-            onEachFeature={(_, layer) => r.name && layer.bindTooltip(r.name, { sticky: true })}
-          />
-        ))
-      }
 
       {start && <Marker position={start} icon={greenIcon} />}
       {end && <Marker position={end} icon={redIcon} />}

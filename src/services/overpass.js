@@ -1,6 +1,5 @@
+// Default bbox: Prato only (used for manual infra toggle)
 const BBOX = '43.83,11.03,43.94,11.20'
-// Larger bbox covering Pistoia–Prato–Florence corridor
-const BBOX_INTERCITY = '43.72,10.90,43.98,11.40'
 
 // Multiple mirrors — tries each in order until one works
 const MIRRORS = [
@@ -54,19 +53,31 @@ async function query(ql) {
   throw new Error(`Tutti i server Overpass non raggiungibili: ${lastErr?.message}`)
 }
 
-export async function fetchCyclingInfrastructure() {
-  const cached = sessionStorage.getItem('cyclo_infra')
+export async function fetchCyclingInfrastructure(bbox = BBOX) {
+  const cacheKey = `cyclo_infra_${bbox}`
+  const cached = sessionStorage.getItem(cacheKey)
   if (cached) return JSON.parse(cached)
 
   const data = await query(
-    `(way["highway"="cycleway"](${BBOX});` +
-    `way["cycleway"~"."](${BBOX});` +
-    `way["bicycle"="designated"]["highway"~"path|track"](${BBOX}););` +
+    `(way["highway"="cycleway"](${bbox});` +
+    `way["cycleway"~"."](${bbox});` +
+    `way["bicycle"="designated"]["highway"~"path|track"](${bbox}););` +
     `out body;>;out skel qt;`
   )
   const geojson = waysToGeoJSON(data.elements)
-  sessionStorage.setItem('cyclo_infra', JSON.stringify(geojson))
+  sessionStorage.setItem(cacheKey, JSON.stringify(geojson))
   return geojson
+}
+
+// Compute a padded bbox string from a GeoJSON route geometry
+export function bboxFromRoute(coordinates, paddingDeg = 0.015) {
+  const lons = coordinates.map(c => c[0])
+  const lats = coordinates.map(c => c[1])
+  const minLat = Math.min(...lats) - paddingDeg
+  const minLon = Math.min(...lons) - paddingDeg
+  const maxLat = Math.max(...lats) + paddingDeg
+  const maxLon = Math.max(...lons) + paddingDeg
+  return `${minLat.toFixed(5)},${minLon.toFixed(5)},${maxLat.toFixed(5)},${maxLon.toFixed(5)}`
 }
 
 export async function fetchNamedRoutes() {

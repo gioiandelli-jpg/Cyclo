@@ -2,9 +2,8 @@ import { useState } from 'react'
 import Map from './components/Map'
 import SearchPanel from './components/SearchPanel'
 import RecommendedRoutes from './components/RecommendedRoutes'
-import IntercityRoutes from './components/IntercityRoutes'
 import { getBikeRoute } from './services/routing'
-import { fetchCyclingInfrastructure, fetchNamedRoutes, fetchIntercityRoutes } from './services/overpass'
+import { fetchCyclingInfrastructure, fetchNamedRoutes, bboxFromRoute } from './services/overpass'
 
 export default function App() {
   const [start, setStart] = useState(null)
@@ -22,9 +21,6 @@ export default function App() {
   const [activeRouteIds, setActiveRouteIds] = useState([])
   const [routesLoading, setRoutesLoading] = useState(false)
   const [activeRecIds, setActiveRecIds] = useState([])
-  const [intercityRoutes, setIntercityRoutes] = useState([])
-  const [activeIntercityIds, setActiveIntercityIds] = useState([])
-  const [intercityLoading, setIntercityLoading] = useState(false)
 
   const handleMapClick = (latlng) => {
     const point = { lat: latlng.lat, lng: latlng.lng, display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}` }
@@ -40,18 +36,15 @@ export default function App() {
     if (!start || !end) return
     setLoading(true); setError(null)
     try {
-      // Run both in parallel, collect results, then update state together
-      // (ensures React batches both updates → classification runs immediately)
-      const [result, freshInfra] = await Promise.all([
-        getBikeRoute(start, end),
-        cyclingInfra
-          ? Promise.resolve(cyclingInfra)
-          : fetchCyclingInfrastructure().catch(err => {
-              console.error('Overpass non raggiungibile:', err)
-              return null
-            }),
-      ])
-      if (freshInfra && freshInfra !== cyclingInfra) setCyclingInfra(freshInfra)
+      const result = await getBikeRoute(start, end)
+      // Fetch infra for the route's actual bounding box so long routes
+      // (Prato→Pistoia, Prato→Firenze) get correct green/yellow classification
+      const routeBbox = bboxFromRoute(result.geometry.coordinates)
+      const freshInfra = await fetchCyclingInfrastructure(routeBbox).catch(err => {
+        console.error('Overpass non raggiungibile:', err)
+        return null
+      })
+      setCyclingInfra(freshInfra)
       setRoute(result)
     }
     catch (e) { setError(e.message || 'Errore nel calcolo del percorso') }
@@ -90,22 +83,6 @@ export default function App() {
     )
   }
 
-  const handleLoadIntercity = async () => {
-    setIntercityLoading(true)
-    try {
-      const routes = await fetchIntercityRoutes()
-      setIntercityRoutes(routes)
-      setActiveIntercityIds(routes.map(r => r.id))
-    }
-    catch { setError('Errore nel caricamento dei percorsi intercity') }
-    finally { setIntercityLoading(false) }
-  }
-
-  const handleToggleIntercity = (id) =>
-    setActiveIntercityIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    )
-
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -125,13 +102,6 @@ export default function App() {
             prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
           )}
         />
-        <IntercityRoutes
-          routes={intercityRoutes}
-          activeIds={activeIntercityIds}
-          onToggle={handleToggleIntercity}
-          loading={intercityLoading}
-          onLoad={handleLoadIntercity}
-        />
       </aside>
       <main className="map-area">
         <Map
@@ -139,8 +109,6 @@ export default function App() {
           cyclingInfra={cyclingInfra} showCyclingInfra={showCyclingInfra}
           namedRoutes={namedRoutes} activeRouteIds={activeRouteIds}
           activeRecIds={activeRecIds}
-          intercityRoutes={intercityRoutes}
-          activeIntercityIds={activeIntercityIds}
           onMapClick={handleMapClick}
         />
         {route && cyclingInfra && (
