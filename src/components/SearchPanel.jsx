@@ -102,7 +102,9 @@ function AddressInput({ label, color, value, onSelect, onGeolocate, placeholder 
 export default function SearchPanel({
   start, end, onStartSelect, onEndSelect,
   onCalculate, onClear, loading, error,
-  showCyclingLayer, onToggleCyclingLayer,
+  showCyclingInfra, onToggleCyclingInfra, infraLoading,
+  namedRoutes, activeRouteIds, onToggleRoute, routesLoading,
+  onLoadRoutes,
 }) {
   const handleGeolocate = () => {
     if (!navigator.geolocation) { alert('Geolocalizzazione non supportata dal browser'); return }
@@ -187,20 +189,50 @@ export default function SearchPanel({
         </div>
       )}
 
-      <div className="layer-toggle">
+      <div className="layers-section">
+        <div className="layers-title">Livelli mappa</div>
+
         <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={showCyclingLayer}
-            onChange={onToggleCyclingLayer}
-          />
+          <input type="checkbox" checked={showCyclingInfra} onChange={onToggleCyclingInfra} />
           <span className="toggle-switch" />
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/>
-            <circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h3.5"/>
-          </svg>
-          Mostra piste ciclabili
+          <span className="toggle-text">
+            <span className="layer-dot" style={{ background: '#22c55e' }} />
+            Piste ciclabili OSM
+          </span>
+          {infraLoading && <span className="layer-spinner" />}
         </label>
+
+        <div className="named-routes-section">
+          <div className="named-routes-header">
+            <span className="toggle-text">
+              <span className="layer-dot" style={{ background: '#a855f7' }} />
+              Percorsi nominati
+            </span>
+            {namedRoutes.length === 0 && !routesLoading && (
+              <button className="load-routes-btn" onClick={onLoadRoutes}>Carica</button>
+            )}
+            {routesLoading && <span className="layer-spinner" />}
+          </div>
+
+          {namedRoutes.length > 0 && (
+            <ul className="routes-list">
+              {namedRoutes.map(r => (
+                <li key={r.id}>
+                  <label className="route-item-label">
+                    <input
+                      type="checkbox"
+                      checked={activeRouteIds.includes(r.id)}
+                      onChange={() => onToggleRoute(r.id)}
+                    />
+                    <span className="route-color-dot" style={{ background: r.color }} />
+                    <span className="route-name">{r.name}</span>
+                    {r.distance && <span className="route-dist-badge">{r.distance}</span>}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )

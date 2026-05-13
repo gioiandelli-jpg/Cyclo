@@ -164,8 +164,16 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
   padding: 10px 12px; font-size: 13px; margin-bottom: 12px;
 }
 
-/* Layer toggle */
-.layer-toggle { padding: 10px 0; }
+/* Layers section */
+.layers-section {
+  border-top: 1px solid var(--sidebar-border);
+  padding: 14px 0 4px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.layers-title {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
 .toggle-label {
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: var(--text-muted);
@@ -180,11 +188,53 @@ html, body, #root { height: 100%; overflow: hidden; font-family: 'Segoe UI', sys
 .toggle-switch::after {
   content: ''; position: absolute;
   top: 3px; left: 3px; width: 14px; height: 14px;
-  background: white; border-radius: 50%;
-  transition: transform 0.2s;
+  background: white; border-radius: 50%; transition: transform 0.2s;
 }
 .toggle-label input:checked + .toggle-switch { background: var(--green); }
 .toggle-label input:checked + .toggle-switch::after { transform: translateX(16px); }
+.toggle-text { display: flex; align-items: center; gap: 6px; flex: 1; }
+.layer-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.layer-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #334155; border-top-color: var(--green);
+  animation: spin 0.6s linear infinite; flex-shrink: 0;
+}
+
+/* Named routes */
+.named-routes-section {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.named-routes-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-muted);
+}
+.load-routes-btn {
+  margin-left: auto;
+  background: #1e3a5f; color: #60a5fa;
+  border: 1px solid #2563eb40; border-radius: 6px;
+  padding: 2px 10px; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+}
+.load-routes-btn:hover { background: #1e40af40; }
+
+.routes-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.route-item-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-muted);
+  cursor: pointer; padding: 6px 8px;
+  background: var(--sidebar-surface); border-radius: 6px;
+  transition: background 0.15s;
+}
+.route-item-label:hover { background: #263349; color: var(--text); }
+.route-item-label input { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+.route-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.route-name { flex: 1; line-height: 1.3; }
+.route-dist-badge {
+  font-size: 10px; background: #1e293b; color: #64748b;
+  padding: 1px 5px; border-radius: 4px; white-space: nowrap;
+}
 
 /* Route info */
 .route-info {

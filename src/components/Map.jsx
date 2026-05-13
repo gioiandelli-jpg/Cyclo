@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from 'react-leaflet'
+import { useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, Polyline, GeoJSON, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
 delete L.Icon.Default.prototype._getIconUrl
@@ -40,7 +40,39 @@ function FitBounds({ route }) {
   return null
 }
 
-export default function Map({ start, end, route, showCyclingLayer, onMapClick }) {
+// Wraps GeoJSON so the layer re-mounts when data changes
+function InfraLayer({ data }) {
+  const key = useRef(0)
+  useEffect(() => { key.current++ }, [data])
+  if (!data) return null
+  return (
+    <GeoJSON
+      key={key.current}
+      data={data}
+      style={{ color: '#22c55e', weight: 3, opacity: 0.85 }}
+    />
+  )
+}
+
+function NamedRouteLayer({ route }) {
+  return (
+    <GeoJSON
+      key={route.id}
+      data={route.geojson}
+      style={{ color: route.color, weight: 4, opacity: 0.9 }}
+      onEachFeature={(feature, layer) => {
+        if (route.name) layer.bindTooltip(route.name, { sticky: true })
+      }}
+    />
+  )
+}
+
+export default function Map({
+  start, end, route,
+  cyclingInfra, showCyclingInfra,
+  namedRoutes, activeRouteIds,
+  onMapClick,
+}) {
   const routeCoords = route
     ? route.geometry.coordinates.map(([lng, lat]) => [lat, lng])
     : []
@@ -50,21 +82,21 @@ export default function Map({ start, end, route, showCyclingLayer, onMapClick })
       center={[43.8777, 11.1022]}
       zoom={14}
       style={{ height: '100%', width: '100%' }}
-      zoomControl={true}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {showCyclingLayer && (
-        <TileLayer
-          url="https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png"
-          opacity={0.7}
-          attribution='Cycling routes &copy; <a href="https://cycling.waymarkedtrails.org">Waymarked Trails</a>'
-        />
-      )}
       <ClickHandler onMapClick={onMapClick} />
       <FitBounds route={route} />
+
+      {showCyclingInfra && <InfraLayer data={cyclingInfra} />}
+
+      {namedRoutes
+        .filter(r => activeRouteIds.includes(r.id))
+        .map(r => <NamedRouteLayer key={r.id} route={r} />)
+      }
+
       {start && <Marker position={start} icon={greenIcon} />}
       {end && <Marker position={end} icon={redIcon} />}
       {routeCoords.length > 0 && (
